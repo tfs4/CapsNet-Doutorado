@@ -64,6 +64,9 @@ class DigitCaps(nn.Module):
         # W @ x =
         # (1, out_caps, in_caps, out_dim, in_dim) @ (batch_size, 1, in_caps, in_dim, 1) =
         # (batch_size, out_caps, in_caps, out_dims, 1)
+
+
+
         u_hat = torch.matmul(self.W, x)
         # (batch_size, out_caps, in_caps, out_dim)
         u_hat = u_hat.squeeze(-1)
@@ -121,6 +124,28 @@ class CapsNet(nn.Module):
                                     out_caps=10,
                                     out_dim=16,
                                     num_routing=3)
+
+        # #512 x 512
+        # self.conv = nn.Conv2d(1, 128, 9)
+        # self.relu = nn.ReLU(inplace=True)
+        #
+        # # Primary capsule
+        # self.primary_caps = PrimaryCaps(num_conv_units=32,
+        #                                 in_channels=128,
+        #                                 out_channels=8,
+        #                                 kernel_size=9,
+        #                                 stride=2)
+        #
+        # # Calculando a saída da PrimaryCaps:
+        # out_dim = (504 - 9) // 2 + 1  # Supondo que a saída da conv anterior seja (256, 504, 504)
+        # num_primaryCaps_output = out_dim * out_dim * 32
+        #
+        # # Digit capsule
+        # self.digit_caps = DigitCaps(in_dim=8,
+        #                             in_caps=num_primaryCaps_output,
+        #                             out_caps=10,
+        #                             out_dim=16,
+        #                             num_routing=3)
 
         # Reconstruction layer
         self.decoder = nn.Sequential(

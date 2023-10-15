@@ -4,37 +4,51 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 from torchvision.transforms import transforms
 from capsnet import CapsNet, CapsuleLoss
+import config
+from torch.utils.data import ConcatDataset
+import manager_datasets as datasets_control
+
+
 
 # Check cuda availability
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def main():
+
+
+def get_data_loader_A_APTOS(datasets, size):
+
+    test_transform = transforms.Compose([
+                                         transforms.Grayscale(num_output_channels=1),
+                                         transforms.Resize([size, size], transforms.InterpolationMode("bicubic")),
+                                         transforms.ToTensor(),
+                                         #transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+                                         transforms.Normalize((0.5), (0.5))
+                                         ])
+
+
+    dataset_list = []
+
+    for key in datasets.keys():
+        datasets[key][0]["level"].replace({2: 1, 3: 1, 4: 1}, inplace=True)
+        datasets[key][0].reset_index(inplace=True)
+        dataset_list.append(datasets_control.dataset(datasets[key][0], f'{datasets[key][1]}', image_transform=test_transform))
+
+
+    dataset_full = ConcatDataset(dataset_list)
+    train = DataLoader(dataset_full, batch_size=config.BATCH, shuffle=True, generator=torch.Generator().manual_seed(1))
+
+    return train
+
+
+
+
+def main(train_loader, test_loader):
     # Load model
     model = CapsNet().to(device)
     criterion = CapsuleLoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.96)
-
-    # Load data
-    transform = transforms.Compose([
-        # shift by 2 pixels in either direction with zero padding.
-        transforms.RandomCrop(28, padding=2),
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-    ])
-    DATA_PATH = './data'
-    BATCH_SIZE = 128
-    train_loader = DataLoader(
-        dataset=MNIST(root=DATA_PATH, download=True, train=True, transform=transform),
-        batch_size=BATCH_SIZE,
-        num_workers=4,
-        shuffle=True)
-    test_loader = DataLoader(
-        dataset=MNIST(root=DATA_PATH, download=True, train=False, transform=transform),
-        batch_size=BATCH_SIZE,
-        num_workers=4,
-        shuffle=True)
 
     # Train
     EPOCHES = 50
@@ -84,4 +98,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    train, val, test = datasets_control.get_datasets()
+    train = get_data_loader_A_APTOS(train, 28)
+    valid = get_data_loader_A_APTOS(val, 28)
+    main(train, valid)
