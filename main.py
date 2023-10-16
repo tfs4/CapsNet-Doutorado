@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 from torchvision.transforms import transforms
 from capsnet import CapsNet, CapsuleLoss
+import capsnet
 import config
 from torch.utils.data import ConcatDataset
 import manager_datasets as datasets_control
@@ -51,9 +52,8 @@ def main(train_loader, test_loader):
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.96)
 
     # Train
-    EPOCHES = 50
     model.train()
-    for ep in range(EPOCHES):
+    for ep in range(config.EPOCHS):
         batch_id = 1
         correct, total, total_loss = 0, 0, 0.
         for images, labels in train_loader:
@@ -94,11 +94,14 @@ def main(train_loader, test_loader):
     print('Accuracy: {}'.format(correct / total))
 
     # Save model
-    torch.save(model.state_dict(), './model/capsnet_ep{}_acc{}.pt'.format(EPOCHES, correct / total))
+    torch.save(model.state_dict(), './model/capsnet_ep{}_acc{}.pt'.format(config.EPOCHS, correct / total))
 
 
 if __name__ == '__main__':
+    # params = capsnet.get_capsule_params(config.IMG_SIZE)
+    # print("Conv params: ", params)
+
     train, val, test = datasets_control.get_datasets()
-    train = get_data_loader_A_APTOS(train, 28)
-    valid = get_data_loader_A_APTOS(val, 28)
+    train = get_data_loader_A_APTOS(train, config.IMG_SIZE)
+    valid = get_data_loader_A_APTOS(val, config.IMG_SIZE)
     main(train, valid)

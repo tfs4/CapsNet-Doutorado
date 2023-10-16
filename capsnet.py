@@ -1,5 +1,48 @@
 import torch
 from torch import nn
+import math
+import config
+
+def get_capsule_params(input_size, conv_out_channels=256, conv_kernel=9,
+                       conv_stride=1, primary_out_channels=8,
+                       primary_kernel=9, primary_stride=2,
+                       primary_capsules=32, digit_capsules=10,
+                       digit_in_dim=8, digit_out_dim=16, num_routing=3):
+    # Convolutional layer
+    conv_output_size = math.floor((input_size - conv_kernel) / conv_stride + 1)
+
+    # PrimaryCaps layer
+    primary_output_size = math.floor((conv_output_size - primary_kernel) / primary_stride + 1)
+    primary_output_total = primary_output_size * primary_output_size * primary_capsules
+
+    # Parameters
+    params = {
+        'conv': {
+            'in_channels': 1,  # Grayscale image
+            'out_channels': conv_out_channels,
+            'kernel_size': conv_kernel,
+            'stride': conv_stride
+        },
+        'primary_caps': {
+            'num_conv_units': primary_capsules,
+            'in_channels': conv_out_channels,
+            'out_channels': primary_out_channels,
+            'kernel_size': primary_kernel,
+            'stride': primary_stride
+        },
+        'digit_caps': {
+            'in_dim': digit_in_dim,
+            'in_caps': primary_output_total,
+            'out_caps': digit_capsules,
+            'out_dim': digit_out_dim,
+            'num_routing': num_routing
+        }
+    }
+
+    return params
+
+# image_size = 256
+#params = get_capsule_params(config.IMG_SIZE)
 
 # Available device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -106,12 +149,16 @@ class CapsNet(nn.Module):
 
     def __init__(self):
         super(CapsNet, self).__init__()
+        params = get_capsule_params(config.IMG_SIZE)
 
         # Conv2d layer
         self.conv = nn.Conv2d(1, 256, 9)
         self.relu = nn.ReLU(inplace=True)
 
+
+
         # Primary capsule
+
         self.primary_caps = PrimaryCaps(num_conv_units=32,
                                         in_channels=256,
                                         out_channels=8,
